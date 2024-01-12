@@ -3,7 +3,6 @@ from keras.applications import MobileNet
 from keras.optimizers import Adam
 from keras.utils import image_dataset_from_directory
 import matplotlib.pyplot as plt
-from sklearn.metrics import f1_score
 
 
 # Define paths to the files
@@ -45,8 +44,9 @@ x = layers.GlobalAveragePooling2D()(x)  # Reduce the dimensions from 2d to 1d
 x = layers.Dropout(0.5)(x)  # drops connections to prevent overfitting
 # (https://medium.com/analytics-vidhya/a-simple-introduction-to-dropout-regularization-with-code-5279489dda1e)
 predictions = layers.Dense(1, activation='sigmoid')(x)  # Final output classification
-
+# Setting up the model to have the whole structure from the base model of mobile net to the outputs of predictions
 model = models.Model(inputs=base_model.input, outputs=predictions)
+# binary crossentropy with Adam
 model.compile(optimizer=Adam(learning_rate=0.0001),
               loss='binary_crossentropy',
               metrics=['accuracy'])
@@ -56,23 +56,25 @@ history = model.fit(
     epochs=20,
     validation_data=test_ds
 )
+# print results
 test_loss, test_acc = model.evaluate(test_ds)
 print('Test accuracy:', test_acc)
 
 
 plt.figure(figsize=(10, 10))
-#
+# get a batch in the test dataset with the images and labels
 for images, labels in test_ds.take(1):
+    # make a prediction based on the trained model
     predictions = model.predict(images)
 
-    for i in range(9):  # Display 9 images
+    for i in range(9):  # Display 9 images and place the predicted label as well as the actual label on a graph
         ax = plt.subplot(3, 3, i + 1)
         plt.imshow(images[i].numpy().astype("uint8"))
-
+        # Binary sigmoid so prediction based on if greater than 0.5 or not
         predicted_label = class_names[int(predictions[i] > 0.5)]
         actual_label = class_names[int(labels[i])]
+        # Attach the labels and stack them
         plt.title(f'Actual: {actual_label}\nPredicted: {predicted_label}')
         plt.axis("off")
 plt.show()
-
 
